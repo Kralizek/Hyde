@@ -1,3 +1,10 @@
-* text=auto eol=lf
+*.cs diff=csharp
+
+*.cs	    crlf
+*.sln		crlf
+*.*proj*	crlf
+
 *.{cmd,[cC][mM][dD]} text eol=crlf
 *.{bat,[bB][aA][tT]} text eol=crlf
+
+* text=auto eol=lf
