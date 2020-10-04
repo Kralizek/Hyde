@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Hyde.Commands.Post;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Hyde
 {
@@ -17,6 +18,8 @@ namespace Hyde
                     .UseHost(_ => Host.CreateDefaultBuilder(), host =>
                     {
                         host.ConfigureLogging(ConfigureLogging);
+
+                        host.ConfigureServices(ConfigureServices);
                     })
                     .UseDefaults()
                     .Build()
@@ -26,6 +29,20 @@ namespace Hyde
         private static void ConfigureLogging(HostBuilderContext context, ILoggingBuilder logging)
         {
             logging.SetMinimumLevel(LogLevel.Error);
+        }
+
+        private static void ConfigureServices(HostBuilderContext context, IServiceCollection services)
+        {
+            services.AddTransient<NewPostCommandHandler>();
+
+            services.AddTransient<ExecutionContext>(sp => 
+            {
+                var host = sp.GetRequiredService<IHost>();
+
+                var console = host.Services.GetRequiredService<IConsole>();
+
+                return new ExecutionContext{ Console = console };
+            });
         }
 
         private static CommandLineBuilder BuildCommandLine()
@@ -42,5 +59,10 @@ namespace Hyde
             return new CommandLineBuilder(rootCommand);
         }
 
+    }
+
+    public class ExecutionContext 
+    {
+        public IConsole Console { get; set; }
     }
 }
