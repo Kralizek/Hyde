@@ -7,24 +7,22 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Hyde.Commands.Post;
 using Microsoft.Extensions.DependencyInjection;
+using Hyde.Commands;
 
 namespace Hyde
 {
     class Program
     {
-        static async Task Main(string[] args)
-        {
-            await BuildCommandLine()
-                    .UseHost(_ => Host.CreateDefaultBuilder(), host =>
-                    {
-                        host.ConfigureLogging(ConfigureLogging);
+        static async Task Main(string[] args) => await BuildCommandLine()
+            .UseHost(_ => Host.CreateDefaultBuilder(), host =>
+            {
+                host.ConfigureLogging(ConfigureLogging);
 
-                        host.ConfigureServices(ConfigureServices);
-                    })
-                    .UseDefaults()
-                    .Build()
-                    .InvokeAsync(args);
-        }
+                host.ConfigureServices(ConfigureServices);
+            })
+            .UseDefaults()
+            .Build()
+            .InvokeAsync(args);
 
         private static void ConfigureLogging(HostBuilderContext context, ILoggingBuilder logging)
         {
@@ -33,7 +31,11 @@ namespace Hyde
 
         private static void ConfigureServices(HostBuilderContext context, IServiceCollection services)
         {
-            services.AddTransient<NewPostCommandHandler>();
+            services.Scan(scan => scan.FromAssemblyOf<Program>()
+                                      .AddClasses(classes => classes.AssignableTo(typeof(ICommandHandler<>)))
+                                                                    .AsSelf()
+                                                                    .WithTransientLifetime()
+            );
 
             services.AddTransient<ExecutionContext>(sp => 
             {
@@ -47,22 +49,13 @@ namespace Hyde
 
         private static CommandLineBuilder BuildCommandLine()
         {
-            Command rootCommand = new RootCommand("Hyde")
+            var builder = new CommandLineBuilder(new RootCommand("Hyde")
             {
-                new Command("post")
-                {
-                    new NewPostCommand(),
-                    new ListPostCommand()
-                }
-            };
+                new PostCommand()
+            });
 
-            return new CommandLineBuilder(rootCommand);
+            return builder;
         }
 
-    }
-
-    public class ExecutionContext 
-    {
-        public IConsole Console { get; set; }
     }
 }
