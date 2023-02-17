@@ -12,7 +12,7 @@ The tool will support commands like:
 - hyde page view
 - hyde page delete
 
-The tool will be built in .NET Core and be available as a global tool. I aim to be using the new [`System.CommandLine`](https://github.com/dotnet/command-line-api) APIs.
+The tool will be built in .NET and be available as a global tool. This prototype uses the Spectre Console CLI library.
 
 Ideally, the tool should expose an interactive UI similar to the one found in the GitHub CLI.
 
