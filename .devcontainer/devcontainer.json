@@ -5,6 +5,7 @@
 		"ghcr.io/devcontainers/features/github-cli:1": {
 			"installDirectlyFromGitHubRelease": true,
 			"version": "latest"
-		}
+		},
+		"olliglorioso/git-completion/git-completion": "latest"
 	}
 }
