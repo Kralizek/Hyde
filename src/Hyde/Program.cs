@@ -12,7 +12,7 @@ var app = new CommandApp(registrar);
 
 app.Configure(config =>
 {
-    config.AddBranch<PostSettings>("post", post =>
+    config.AddBranch("post", post =>
     {
         post.SetDescription("Manage posts");
 
@@ -29,7 +29,7 @@ app.Configure(config =>
             .WithDescription("Deletes a posts");
     });
     
-    config.AddBranch<PageSettings>("page", page =>
+    config.AddBranch("page", page =>
     {
         page.SetDescription("Manage pages");
         
@@ -47,4 +47,4 @@ app.Configure(config =>
     });
 });
 
-return await app.RunAsync(args);
+return app.Run(args);
