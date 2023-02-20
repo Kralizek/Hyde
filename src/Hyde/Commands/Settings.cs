@@ -6,7 +6,8 @@ namespace Hyde.Commands;
 
 public class Settings : CommandSettings
 {
-    [CommandOption("-d|--directory")]
+    [CommandOption("-s|--site")]
     [TypeConverter(typeof(DirectoryInfoTypeConverter))]
-    public DirectoryInfo CurrentDirectory { get; set; } = new DirectoryInfo(Directory.GetCurrentDirectory());
+    [Description("The path to the root of the site to work on. Default: working directory")]
+    public DirectoryInfo SiteDirectory { get; set; } = new DirectoryInfo(Directory.GetCurrentDirectory());
 }
