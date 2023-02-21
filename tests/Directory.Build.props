@@ -1,0 +1,17 @@
+<Project>
+  <PropertyGroup>
+    <RootNamespace>Tests</RootNamespace>
+    <LangVersion>11</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoFixture" Version="4.17.0" />
+    <PackageReference Include="AutoFixture.AutoMoq" Version="4.17.0" />
+    <PackageReference Include="AutoFixture.Idioms" Version="4.17.0" />
+    <PackageReference Include="AutoFixture.NUnit3" Version="4.17.0" />
+    <PackageReference Include="Moq" Version="4.18.4" />
+    <PackageReference Include="JunitXml.TestLogger" Version="3.0.124" />
+    <PackageReference Include="InsightArchitectures.Testing.NUnitLogger" Version="1.5.0" />
+    <PackageReference Include="Kralizek.AutoFixture.Extensions" Version="1.2.0" />
+  </ItemGroup>
+</Project>
