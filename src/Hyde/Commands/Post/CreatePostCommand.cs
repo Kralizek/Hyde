@@ -1,6 +1,4 @@
 ﻿using System.ComponentModel;
-using System.Text;
-using System.Text.RegularExpressions;
 using Hyde.Utilities;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -11,6 +9,7 @@ namespace Hyde.Commands.Post;
 public class CreatePostCommand : AsyncCommand<CreatePostCommand.CreatePostSettings>
 {
     private readonly ISerializer _serializer;
+    private readonly IFileNameGenerator _fileNameGenerator;
 
     public class CreatePostSettings : PostSettings
     {
@@ -43,9 +42,10 @@ public class CreatePostCommand : AsyncCommand<CreatePostCommand.CreatePostSettin
         public bool IsDraft { get; init; }
     }
 
-    public CreatePostCommand(ISerializer serializer)
+    public CreatePostCommand(ISerializer serializer, IFileNameGenerator fileNameGenerator)
     {
         _serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
+        _fileNameGenerator = fileNameGenerator ?? throw new ArgumentNullException(nameof(fileNameGenerator));
     }
 
     public override ValidationResult Validate(CommandContext context, CreatePostSettings settings)
@@ -62,20 +62,22 @@ public class CreatePostCommand : AsyncCommand<CreatePostCommand.CreatePostSettin
     {
         SettingsDumper.Dump(settings);
 
-        var filename = new FileInfo(Path.Combine(settings.SiteDirectory.FullName, settings.IsDraft ? JekyllFolders.Drafts : JekyllFolders.Posts, GetFileName(settings)));
+        var fileName = _fileNameGenerator.GeneratePostFileName(settings.PostDate, settings.FileName ?? settings.Title);
+
+        var filePath = new FileInfo(Path.Combine(settings.SiteDirectory.FullName, settings.IsDraft ? JekyllFolders.Drafts : JekyllFolders.Posts, fileName));
 
         var frontMatter = CreateFrontMatterHeader(settings, context.Remaining.Parsed);
 
         await AnsiConsole.Status().StartAsync($"Creating post '{settings.Title}'", async _ =>
         {
-            if (!filename.Directory?.Exists ?? false)
+            if (!(filePath.Directory?.Exists ?? false))
             {
-                AnsiConsole.WriteLine($"Directory '{filename.Directory.Name}' is missing. Creating it.");
+                AnsiConsole.WriteLine($"Directory '{filePath.Directory!.Name}' is missing. Creating it.");
                 
-                filename.Directory.Create();
+                filePath.Directory.Create();
             }
             
-            await using var sw = File.CreateText(filename.FullName);
+            await using var sw = File.CreateText(filePath.FullName);
             
             await sw.WriteLineAsync("---");
         
@@ -90,7 +92,7 @@ public class CreatePostCommand : AsyncCommand<CreatePostCommand.CreatePostSettin
             await sw.WriteLineAsync("<!-- Post created by Hyde -->");
         });
         
-        AnsiConsole.WriteLine($"{(!settings.IsDraft ? "Post" : "Draft for post")} '{settings.Title}' successfully created as '{filename.Name}'.");
+        AnsiConsole.WriteLine($"{(!settings.IsDraft ? "Post" : "Draft for post")} '{settings.Title}' successfully created as '{filePath.Name}'.");
 
         return 0;
     }
@@ -126,38 +128,5 @@ public class CreatePostCommand : AsyncCommand<CreatePostCommand.CreatePostSettin
         }
 
         return frontMatter;
-    }
-
-    private static string GetFileName(CreatePostSettings settings)
-    {
-        var result = new StringBuilder();
-
-        result.Append(settings.PostDate.ToString("yyyy-MM-dd"));
-        
-        result.Append('-');
-
-        result.Append(string.IsNullOrEmpty(settings.FileName) ? ToKebabCase(settings.Title) : ToKebabCase(settings.FileName));
-
-        result.Append(".md");
-
-        return result.ToString();
-    }
-
-    private static string ToKebabCase(string value)
-    {
-        // Replace all non-alphanumeric characters with a dash
-        value = Regex.Replace(value, @"[^0-9a-zA-Z]", "-");
-
-        // Replace all subsequent dashes with a single dash
-        value = Regex.Replace(value, @"[-]{2,}", "-");
-
-        // Remove any trailing dashes
-        value = Regex.Replace(value, @"-+$", string.Empty);
-
-        // Remove any dashes in position zero
-        if (value.StartsWith("-")) value = value[1..];
-
-        // Lowercase and return
-        return value.ToLower();
     }
 }

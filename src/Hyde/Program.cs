@@ -1,5 +1,6 @@
 ﻿using Hyde.Commands.Page;
 using Hyde.Commands.Post;
+using Hyde.Utilities;
 using Microsoft.Extensions.DependencyInjection;
 using Spectre.Console.Cli;
 using Spectre.Console.Cli.Extensions.DependencyInjection;
@@ -11,6 +12,8 @@ services.AddSingleton(_ => new SerializerBuilder()
     .ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull | DefaultValuesHandling.OmitEmptyCollections | DefaultValuesHandling.OmitDefaults));
 
 services.AddSingleton<ISerializer>(sp => sp.GetRequiredService<SerializerBuilder>().Build());
+
+services.AddSingleton<IFileNameGenerator, DefaultFileNameGenerator>();
 
 var registrar = new DependencyInjectionRegistrar(services);
 
