@@ -5,12 +5,12 @@ namespace Hyde.Utilities;
 
 public interface IFileNameGenerator
 {
-    string GeneratePostFileName(DateOnly date, string title);
+    string GeneratePostFileName(DateOnly date, string title, string fileExtension);
 }
 
 public class DefaultFileNameGenerator : IFileNameGenerator
 {
-    public string GeneratePostFileName(DateOnly date, string title)
+    public string GeneratePostFileName(DateOnly date, string title, string fileExtension)
     {
         var result = new StringBuilder();
 
@@ -20,7 +20,9 @@ public class DefaultFileNameGenerator : IFileNameGenerator
 
         result.Append(ToKebabCase(title));
 
-        result.Append(".md");
+        result.Append('.');
+
+        result.Append(fileExtension);
 
         return result.ToString();
     }

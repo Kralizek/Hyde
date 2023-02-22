@@ -1,12 +1,23 @@
-﻿using Hyde.Commands.Page;
-using Hyde.Commands.Post;
+﻿using Hyde.Commands.Post;
 using Hyde.Utilities;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Spectre.Console.Cli;
 using Spectre.Console.Cli.Extensions.DependencyInjection;
 using YamlDotNet.Serialization;
 
+var configuration = new ConfigurationManager();
+
+configuration.AddJsonFile(new DirectoryInfo(Directory.GetCurrentDirectory()).GetFile(Constants.ConfigurationFileName));
+configuration.AddJsonFile(new DirectoryInfo(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)).GetFile(Constants.ConfigurationFileName));
+
 var services = new ServiceCollection();
+
+services.AddOptions();
+
+services.Configure<CreatePostCommand.CreatePostOptions>(configuration.GetSection("Posts"));
+
+services.AddSingleton<IConfiguration>(configuration);
 
 services.AddSingleton(_ => new SerializerBuilder()
     .ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull | DefaultValuesHandling.OmitEmptyCollections | DefaultValuesHandling.OmitDefaults));
@@ -24,6 +35,8 @@ var app = new CommandApp(registrar);
 app.Configure(config =>
 {
     config.ValidateExamples();
+
+    config.SetInterceptor(new LocalConfigurationInterceptor(configuration));
     
     config.AddBranch("post", post =>
     {

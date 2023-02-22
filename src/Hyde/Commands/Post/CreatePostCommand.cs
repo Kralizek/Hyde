@@ -1,9 +1,9 @@
 ﻿using System.ComponentModel;
 using Hyde.Types;
 using Hyde.Utilities;
+using Microsoft.Extensions.Options;
 using Spectre.Console;
 using Spectre.Console.Cli;
-using YamlDotNet.Serialization;
 
 namespace Hyde.Commands.Post;
 
@@ -11,6 +11,7 @@ public class CreatePostCommand : AsyncCommand<CreatePostCommand.CreatePostSettin
 {
     private readonly IContentFileSerializer _serializer;
     private readonly IFileNameGenerator _fileNameGenerator;
+    private readonly CreatePostOptions _options;
 
     public class CreatePostSettings : PostSettings
     {
@@ -43,18 +44,25 @@ public class CreatePostCommand : AsyncCommand<CreatePostCommand.CreatePostSettin
         public bool IsDraft { get; init; }
     }
 
-    public CreatePostCommand(IContentFileSerializer serializer, IFileNameGenerator fileNameGenerator)
+    public class CreatePostOptions
+    {
+        public required string Extension { get; set; } = "md";
+    }
+
+    public CreatePostCommand(IContentFileSerializer serializer, IFileNameGenerator fileNameGenerator, IOptions<CreatePostOptions> options)
     {
         _serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
         _fileNameGenerator = fileNameGenerator ?? throw new ArgumentNullException(nameof(fileNameGenerator));
+        _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
     }
 
     public override async Task<int> ExecuteAsync(CommandContext context, CreatePostSettings settings)
     {
         settings.Dump();
 
-        var fileName = _fileNameGenerator.GeneratePostFileName(settings.PostDate, settings.FileName ?? settings.Title);
         var title = settings.Title ?? AnsiConsole.Ask<string>("Specify a title for the new post:");
+
+        var fileName = _fileNameGenerator.GeneratePostFileName(settings.PostDate, settings.FileName ?? title, _options.Extension);
 
         var filePath = settings.IsDraft switch
         {
