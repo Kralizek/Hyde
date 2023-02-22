@@ -12,7 +12,7 @@ public class ViewPageCommand : AsyncCommand<ViewPageCommand.ViewPageSettings>
 
     public override Task<int> ExecuteAsync(CommandContext context, ViewPageSettings settings)
     {
-        SettingsDumper.Dump(settings);
+        settings.Dump();
         
         return Task.FromResult(0);
     }

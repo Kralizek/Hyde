@@ -12,7 +12,7 @@ public class DeletePostCommand : AsyncCommand<DeletePostCommand.DeletePostSettin
 
     public override Task<int> ExecuteAsync(CommandContext context, DeletePostSettings settings)
     {
-        SettingsDumper.Dump(settings);
+        settings.Dump();
 
         return Task.FromResult(0);
     }

@@ -12,7 +12,7 @@ public class ListPostCommand : AsyncCommand<ListPostCommand.ListPostSettings>
 
     public override Task<int> ExecuteAsync(CommandContext context, ListPostSettings settings)
     {
-        SettingsDumper.Dump(settings);
+        settings.Dump();
 
         return Task.FromResult(0);
     }

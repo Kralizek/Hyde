@@ -12,7 +12,7 @@ public class CreatePageCommand : AsyncCommand<CreatePageCommand.CreatePageSettin
     
     public override Task<int> ExecuteAsync(CommandContext context, CreatePageSettings settings)
     {
-        SettingsDumper.Dump(settings);
+        settings.Dump();
         
         return Task.FromResult(0);
     }

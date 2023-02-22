@@ -12,7 +12,7 @@ public class ListPageCommand : AsyncCommand<ListPageCommand.ListPageSettings>
 
     public override Task<int> ExecuteAsync(CommandContext context, ListPageSettings settings)
     {
-        SettingsDumper.Dump(settings);
+        settings.Dump();
         
         return Task.FromResult(0);
     }

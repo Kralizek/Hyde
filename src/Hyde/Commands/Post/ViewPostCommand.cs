@@ -12,7 +12,7 @@ public class ViewPostCommand : AsyncCommand<ViewPostCommand.ViewPostSettings>
 
     public override Task<int> ExecuteAsync(CommandContext context, ViewPostSettings settings)
     {
-        SettingsDumper.Dump(settings);
+        settings.Dump();
         
         return Task.FromResult(0);
     }

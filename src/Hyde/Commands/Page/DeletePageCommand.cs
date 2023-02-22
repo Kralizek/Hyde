@@ -12,7 +12,7 @@ public class DeletePageCommand : AsyncCommand<DeletePageCommand.DeletePageSettin
 
     public override Task<int> ExecuteAsync(CommandContext context, DeletePageSettings settings)
     {
-        SettingsDumper.Dump(settings);
+        settings.Dump();
         
         return Task.FromResult(0);
     }

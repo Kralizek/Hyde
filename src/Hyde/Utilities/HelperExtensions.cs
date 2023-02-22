@@ -1,13 +1,14 @@
 ﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace Hyde.Utilities;
 
-internal static class SettingsDumper
+internal static class HelperExtensions
 {
     [Conditional("DEBUG")]
-    public static void Dump(CommandSettings settings)
+    public static void Dump(this CommandSettings settings)
     {
         var table = new Table().RoundedBorder();
         table.AddColumn("[grey]Name[/]");

@@ -60,7 +60,7 @@ public class CreatePostCommand : AsyncCommand<CreatePostCommand.CreatePostSettin
 
     public override async Task<int> ExecuteAsync(CommandContext context, CreatePostSettings settings)
     {
-        SettingsDumper.Dump(settings);
+        settings.Dump();
 
         var fileName = _fileNameGenerator.GeneratePostFileName(settings.PostDate, settings.FileName ?? settings.Title);
 
