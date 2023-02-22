@@ -29,10 +29,10 @@ app.Configure(config =>
 
         post.AddCommand<CreatePostCommand>("create")
             .WithDescription("Creates a new post");
+        post.AddCommand<ListPostCommand>("list")
+            .WithDescription("Lists all available posts")
+            .WithExample(new[] { "post", "list", "--include-drafts" });
 
-        // post.AddCommand<ListPostCommand>("list")
-        //     .WithDescription("Lists all available posts");
-        //
         // post.AddCommand<ViewPostCommand>("view")
         //     .WithDescription("View a post");
 
