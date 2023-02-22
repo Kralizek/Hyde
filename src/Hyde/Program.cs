@@ -35,9 +35,9 @@ app.Configure(config =>
         //
         // post.AddCommand<ViewPostCommand>("view")
         //     .WithDescription("View a post");
-        //
-        // post.AddCommand<DeletePostCommand>("delete")
-        //     .WithDescription("Deletes a posts");
+
+        post.AddCommand<DeletePostCommand>("delete")
+            .WithDescription("Deletes a posts");
     });
     
     // config.AddBranch("page", page =>
