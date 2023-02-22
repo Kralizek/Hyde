@@ -23,21 +23,36 @@ var app = new CommandApp(registrar);
 
 app.Configure(config =>
 {
+    config.ValidateExamples();
+    
     config.AddBranch("post", post =>
     {
         post.SetDescription("Manage posts");
 
         post.AddCommand<CreatePostCommand>("create")
-            .WithDescription("Creates a new post");
+            .WithDescription("Creates a new post")
+            .WithExample(new[] { "post", "create" })
+            .WithExample(new[] { "post", "create", "\"Hello world, the most common title\"" })
+            .WithExample(new[] { "post", "create", "--filename", "hello-world" })
+            .WithExample(new[] { "post", "create", "--date", "2022-12-10" })
+            .WithExample(new[] { "post", "create", "--time", "08:30" })
+            .WithExample(new[] { "post", "create", "--draft" })
+            .WithExample(new[] { "post", "create", "--layout", "custom-layout" })
+            .WithExample(new[] { "post", "create", "--site", "/path/to/your/site" });
+
         post.AddCommand<ListPostCommand>("list")
             .WithDescription("Lists all available posts")
+            .WithExample(new[] { "post", "list", "--site", "/path/to/your/site" })
             .WithExample(new[] { "post", "list", "--include-drafts" });
 
         // post.AddCommand<ViewPostCommand>("view")
         //     .WithDescription("View a post");
 
         post.AddCommand<DeletePostCommand>("delete")
-            .WithDescription("Deletes a posts");
+            .WithDescription("Deletes a posts")
+            .WithExample(new[] { "post", "delete", "2023-02-22-hello-world.md" })
+            .WithExample(new[] { "post", "delete", "--site", "/path/to/your/site" })
+            .WithExample(new[] { "post", "delete", "--draft" });
     });
     
     // config.AddBranch("page", page =>
