@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using Hyde.Types;
 using Hyde.Utilities;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -8,14 +9,14 @@ namespace Hyde.Commands.Post;
 
 public class CreatePostCommand : AsyncCommand<CreatePostCommand.CreatePostSettings>
 {
-    private readonly ISerializer _serializer;
+    private readonly IContentFileSerializer _serializer;
     private readonly IFileNameGenerator _fileNameGenerator;
 
     public class CreatePostSettings : PostSettings
     {
-        [CommandArgument(0, "<TITLE>")]
+        [CommandArgument(0, "[TITLE]")]
         [Description("The title of the post")]
-        public required string Title { get; init; }
+        public string? Title { get; init; }
         
         [CommandOption("-f|--filename")]
         [Description("The alphanumeric portion of the file name. Default: generated from the title.")]
@@ -42,20 +43,10 @@ public class CreatePostCommand : AsyncCommand<CreatePostCommand.CreatePostSettin
         public bool IsDraft { get; init; }
     }
 
-    public CreatePostCommand(ISerializer serializer, IFileNameGenerator fileNameGenerator)
+    public CreatePostCommand(IContentFileSerializer serializer, IFileNameGenerator fileNameGenerator)
     {
         _serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
         _fileNameGenerator = fileNameGenerator ?? throw new ArgumentNullException(nameof(fileNameGenerator));
-    }
-
-    public override ValidationResult Validate(CommandContext context, CreatePostSettings settings)
-    {
-        if (!settings.IsInJekyll)
-        {
-            return ValidationResult.Error("This command can only be executed while in a Jekyll site");
-        }
-        
-        return ValidationResult.Success();
     }
 
     public override async Task<int> ExecuteAsync(CommandContext context, CreatePostSettings settings)
@@ -63,70 +54,36 @@ public class CreatePostCommand : AsyncCommand<CreatePostCommand.CreatePostSettin
         settings.Dump();
 
         var fileName = _fileNameGenerator.GeneratePostFileName(settings.PostDate, settings.FileName ?? settings.Title);
+        var title = settings.Title ?? AnsiConsole.Ask<string>("Specify a title for the new post:");
 
-        var filePath = new FileInfo(Path.Combine(settings.SiteDirectory.FullName, settings.IsDraft ? JekyllFolders.Drafts : JekyllFolders.Posts, fileName));
-
-        var frontMatter = CreateFrontMatterHeader(settings, context.Remaining.Parsed);
-
-        await AnsiConsole.Status().StartAsync($"Creating post '{settings.Title}'", async _ =>
+        var filePath = settings.IsDraft switch
         {
-            if (!(filePath.Directory?.Exists ?? false))
-            {
-                AnsiConsole.WriteLine($"Directory '{filePath.Directory!.Name}' is missing. Creating it.");
-                
-                filePath.Directory.Create();
-            }
-            
-            await using var sw = File.CreateText(filePath.FullName);
-            
-            await sw.WriteLineAsync("---");
-        
-            var frontMatterText = _serializer.Serialize(frontMatter);
-
-            await sw.WriteAsync(frontMatterText);
-
-            await sw.WriteLineAsync("---");
-
-            await sw.WriteLineAsync();
-
-            await sw.WriteLineAsync("<!-- Post created by Hyde -->");
-        });
-        
-        AnsiConsole.WriteLine($"{(!settings.IsDraft ? "Post" : "Draft for post")} '{settings.Title}' successfully created as '{filePath.Name}'.");
-
-        return 0;
-    }
-
-    private static IReadOnlyDictionary<string, object> CreateFrontMatterHeader(CreatePostSettings settings, ILookup<string, string?> remaining)
-    {
-        var frontMatter = new Dictionary<string, object>
-        {
-            ["title"] = settings.Title,
-            ["date"] = settings.PostDate.ToDateTime(settings.PostTime).ToString("yyyy-MM-dd hh:mm:ss"),
-            ["layout"] = settings.Layout
+            false => settings.PostsDirectory.GetFile(fileName),
+            true => settings.DraftsDirectory.GetFile(fileName)
         };
 
-        if (!string.IsNullOrWhiteSpace(settings.Excerpt))
+        await AnsiConsole.Status().StartAsync($"Creating post '{title}'", async _ =>
         {
-            frontMatter.Add("excerpt", settings.Excerpt);
-        }
-
-        foreach (var item in remaining)
-        {
-            switch (item.Count())
+            filePath.Directory?.EnsureExists();
+            
+            var post = new PostFile
             {
-                case > 1:
-                    frontMatter.Add(item.Key, item);
+                Title = title,
+                Date = settings.PostDate.ToDateTime(settings.PostTime),
+                Layout = settings.Layout,
+                Excerpt = settings.Excerpt,
+                Content = "<!-- Post created by Hyde -->",
+                IsPublished = !settings.IsDraft
+            };
+            
+            await using var sw = File.CreateText(filePath.FullName);
 
-                    break;
+            await _serializer.WriteToStreamAsync(sw, post);
+            
+        });
+        
+        AnsiConsole.WriteLine($"{(!settings.IsDraft ? "Post" : "Draft for post")} '{title}' successfully created as '{filePath.Name}'.");
 
-                case 1 when item.Single() is { } value:
-                    frontMatter.Add(item.Key, value);
-
-                    break;
-            }
-        }
-
-        return frontMatter;
+        return 0;
     }
 }

@@ -15,6 +15,8 @@ services.AddSingleton<ISerializer>(sp => sp.GetRequiredService<SerializerBuilder
 
 services.AddSingleton<IFileNameGenerator, DefaultFileNameGenerator>();
 
+services.AddTransient<IContentFileSerializer, JekyllContentFileSerializer>();
+
 var registrar = new DependencyInjectionRegistrar(services);
 
 var app = new CommandApp(registrar);
