@@ -15,7 +15,7 @@ var services = new ServiceCollection();
 
 services.AddOptions();
 
-services.Configure<CreatePostCommand.CreatePostOptions>(configuration.GetSection("Posts"));
+services.Configure<MarkdownFileNameGeneratorOptions>(configuration);
 
 services.AddSingleton<IConfiguration>(configuration);
 
@@ -24,7 +24,7 @@ services.AddSingleton(_ => new SerializerBuilder()
 
 services.AddSingleton<ISerializer>(sp => sp.GetRequiredService<SerializerBuilder>().Build());
 
-services.AddSingleton<IFileNameGenerator, DefaultFileNameGenerator>();
+services.AddSingleton<IFileNameGenerator, MarkdownFileNameGenerator>();
 
 services.AddTransient<IContentFileSerializer, JekyllContentFileSerializer>();
 

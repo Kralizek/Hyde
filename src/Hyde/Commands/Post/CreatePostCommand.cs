@@ -11,7 +11,6 @@ public class CreatePostCommand : AsyncCommand<CreatePostCommand.CreatePostSettin
 {
     private readonly IContentFileSerializer _serializer;
     private readonly IFileNameGenerator _fileNameGenerator;
-    private readonly CreatePostOptions _options;
 
     public class CreatePostSettings : PostSettings
     {
@@ -44,16 +43,10 @@ public class CreatePostCommand : AsyncCommand<CreatePostCommand.CreatePostSettin
         public bool IsDraft { get; init; }
     }
 
-    public class CreatePostOptions
-    {
-        public required string Extension { get; set; } = "md";
-    }
-
-    public CreatePostCommand(IContentFileSerializer serializer, IFileNameGenerator fileNameGenerator, IOptions<CreatePostOptions> options)
+    public CreatePostCommand(IContentFileSerializer serializer, IFileNameGenerator fileNameGenerator)
     {
         _serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
         _fileNameGenerator = fileNameGenerator ?? throw new ArgumentNullException(nameof(fileNameGenerator));
-        _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
     }
 
     public override async Task<int> ExecuteAsync(CommandContext context, CreatePostSettings settings)
@@ -62,7 +55,7 @@ public class CreatePostCommand : AsyncCommand<CreatePostCommand.CreatePostSettin
 
         var title = settings.Title ?? AnsiConsole.Ask<string>("Specify a title for the new post:");
 
-        var fileName = _fileNameGenerator.GeneratePostFileName(settings.PostDate, settings.FileName ?? title, _options.Extension);
+        var fileName = _fileNameGenerator.GeneratePostFileName(settings.PostDate, settings.FileName ?? title);
 
         var filePath = settings.IsDraft switch
         {

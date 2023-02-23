@@ -1,16 +1,29 @@
 ﻿using System.Text;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Options;
 
 namespace Hyde.Utilities;
 
 public interface IFileNameGenerator
 {
-    string GeneratePostFileName(DateOnly date, string title, string fileExtension);
+    string GeneratePostFileName(DateOnly date, string title);
 }
 
-public class DefaultFileNameGenerator : IFileNameGenerator
+public class MarkdownFileNameGeneratorOptions
 {
-    public string GeneratePostFileName(DateOnly date, string title, string fileExtension)
+    public required string MarkdownExtension { get; set; } = "md";
+}
+
+public class MarkdownFileNameGenerator : IFileNameGenerator
+{
+    private readonly MarkdownFileNameGeneratorOptions _options;
+    
+    public MarkdownFileNameGenerator(IOptions<MarkdownFileNameGeneratorOptions> options)
+    {
+        _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
+    }
+    
+    public string GeneratePostFileName(DateOnly date, string title)
     {
         var result = new StringBuilder();
 
@@ -22,7 +35,7 @@ public class DefaultFileNameGenerator : IFileNameGenerator
 
         result.Append('.');
 
-        result.Append(fileExtension);
+        result.Append(_options.MarkdownExtension);
 
         return result.ToString();
     }
