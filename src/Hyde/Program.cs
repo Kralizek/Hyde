@@ -45,7 +45,7 @@ app.Configure(config =>
         post.AddCommand<CreatePostCommand>("create")
             .WithDescription("Creates a new post")
             .WithExample(new[] { "post", "create" })
-            .WithExample(new[] { "post", "create", "\"Hello world, the most common title\"" })
+            .WithExample(new[] { "post", "create", "--title", "\"Hello world, the most common title\"" })
             .WithExample(new[] { "post", "create", "--filename", "hello-world" })
             .WithExample(new[] { "post", "create", "--date", "2022-12-10" })
             .WithExample(new[] { "post", "create", "--time", "08:30" })

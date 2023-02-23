@@ -15,7 +15,7 @@ public class CreatePostCommand : AsyncCommand<CreatePostCommand.CreatePostSettin
 
     public class CreatePostSettings : PostSettings
     {
-        [CommandArgument(0, "[TITLE]")]
+        [CommandOption("-t|--title")]
         [Description("The title of the post")]
         public string? Title { get; init; }
         
