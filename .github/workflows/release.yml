@@ -5,10 +5,34 @@ on:
     tags:
       - v*.*.*
 
+permissions:
+  packages: write
+  contents: write
+
 jobs:
+
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3.3.0
+        with:
+          fetch-depth: 0
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v0.9.7
+        with:
+          versionSpec: '5.x'
+      - name: Determine version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v0.9.7
+        with:
+          useConfigFile: true
+    outputs:
+      version: ${{ steps.gitversion.outputs.semVer }}
 
   release:
     name: Release
+    needs: prepare
     strategy:
       matrix:
         runtime: [
@@ -18,18 +42,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3.3.0
-        with:
-          fetch-depth: 0
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v3.0.3
         with:
-          dotnet-version: 7.0.201
-
-      - name: Install GitVersion
-        uses: gittools/actions/gitversion/setup@v0.9.7
-        with:
-          versionSpec: '5.x'
+          dotnet-version: 7.0.x
 
       - name: Restore dependencies
         run: dotnet restore
@@ -37,15 +54,9 @@ jobs:
       - name: Build
         run: dotnet build --no-restore --configuration Release
 
-      - name: Determine version
-        id: gitversion
-        uses: gittools/actions/gitversion/execute@v0.9.7
-        with:
-          useConfigFile: true
-
       - name: Publish
         id: publish
-        run: dotnet publish ./src/Hyde/Hyde.csproj --configuration Release --runtime ${{ matrix.runtime }} --output ./outputs/publish/${{ matrix.runtime }} --property:Version=${{ steps.gitversion.outputs.semVer }}  --property:DebugType=None --property:DebugSymbols=False
+        run: dotnet publish ./src/Hyde/Hyde.csproj --configuration Release --runtime ${{ matrix.runtime }} --output ./outputs/publish/${{ matrix.runtime }} --property:Version=${{ needs.prepare.outputs.version }} --property:DebugType=None --property:DebugSymbols=False --property:PublishSingleFile=True --property:SelfContained=True --property:AssemblyName=hyde
 
       - name: Archive
         id: zip
@@ -60,3 +71,44 @@ jobs:
         with:
           files: |
             ./outputs/hyde-${{ matrix.runtime }}.zip
+
+  pack:
+    name: Pack tool
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3.3.0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3.0.3
+        with:
+          dotnet-version: 7.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+    
+      - name: Pack
+        id: pack
+        run: dotnet pack ./src/Hyde/Hyde.csproj --configuration Release --output ./outputs/packages --property:AssemblyName=dotnet-hyde --property:Version=${{ needs.prepare.outputs.version }}
+
+      - name: Add to release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ./outputs/packages/*.nupkg
+
+      - name: Push to NuGet
+        env:
+          NUGET_AUTH_TOKEN: ${{ secrets.NUGET_TOKEN }}
+        run: |
+          dotnet nuget push ./outputs/packages/*.nupkg --api-key $NUGET_AUTH_TOKEN --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+      - name: Push to GitHub Package Registry
+        env:
+          NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: | 
+          dotnet nuget push ./outputs/packages/*.nupkg --api-key $NUGET_AUTH_TOKEN --source https://nuget.pkg.github.com/Kralizek/index.json --skip-duplicate
