@@ -32,7 +32,7 @@ jobs:
       version: ${{ steps.gitversion.outputs.semVer }}
 
   release:
-    name: Release
+    name: Publish executable
     needs: prepare
     strategy:
       matrix:
@@ -74,7 +74,7 @@ jobs:
             ./outputs/hyde-${{ matrix.runtime }}.zip
 
   pack:
-    name: Pack tool
+    name: Publish as .NET tool
     needs: prepare
     runs-on: ubuntu-latest
     steps:
@@ -115,7 +115,7 @@ jobs:
           dotnet nuget push ./outputs/packages/*.nupkg --api-key $NUGET_AUTH_TOKEN --source https://nuget.pkg.github.com/Kralizek/index.json --skip-duplicate
 
   feature:
-    name: DevContainer feature
+    name: Publish DevContainer feature
     needs: prepare
     runs-on: ubuntu-latest
     steps:
