@@ -12,6 +12,7 @@ permissions:
 jobs:
 
   prepare:
+    name: Preparation
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -112,3 +113,23 @@ jobs:
           NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: | 
           dotnet nuget push ./outputs/packages/*.nupkg --api-key $NUGET_AUTH_TOKEN --source https://nuget.pkg.github.com/Kralizek/index.json --skip-duplicate
+
+  feature:
+    name: DevContainer feature
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3.3.0
+
+      - name: Get tag name
+        id: get_tag_name  
+        run: echo "::set-output name=tag::$(echo "${{ github.ref }}" | grep -oP 'refs/tags/\K(.+)')"
+
+      - name: Publish feature
+        uses: devcontainers/action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          base-path-to-features: './features'
+          publish-features: true

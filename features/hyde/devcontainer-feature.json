@@ -1,0 +1,17 @@
+{
+    "id": "hyde",
+    "name": "Hyde",
+    "description": "A tool to handle Jekyll posts and pages",
+    "documentationURL": "https://github.com/Kralizek/Hyde",
+    "installsAfter": [
+        "ghcr.io/devcontainers/features/common-utils"
+    ],
+    "options": {
+        "version": {
+            "type": "string",
+            "proposals": ["latest"],
+            "default": "latest",
+            "description": "Select the version of Hyde to install, if not latest."
+        }
+    }
+}
