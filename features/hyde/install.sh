@@ -55,6 +55,7 @@ fi
 
 popd
 
+mkdir -p $_REMOTE_USER_HOME/.local/bin
 pushd $_REMOTE_USER_HOME/.local/bin
 
 unzip /tmp/hydetool/hyde-linux-x64.zip
