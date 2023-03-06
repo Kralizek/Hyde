@@ -53,10 +53,10 @@ if [ "$exit_code" != "0" ]; then
     exit 1
 fi
 
-popd
-
 unzip hyde-linux-x64.zip
 
-mv -f hyde /usr/local/bin
+popd
+
+mv -f /tmp/hydetool/hyde /usr/local/bin
 
 rm -rf /tmp/hydetool
