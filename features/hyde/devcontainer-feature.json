@@ -1,6 +1,7 @@
 {
     "id": "hyde",
     "name": "Hyde",
+    "version": "0.1.0",
     "description": "A tool to handle Jekyll posts and pages",
     "documentationURL": "https://github.com/Kralizek/Hyde",
     "installsAfter": [
