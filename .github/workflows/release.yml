@@ -130,7 +130,7 @@ jobs:
         uses: restackio/update-json-file-action@v2.0
         with:
           file: ./features/hyde/devcontainer-feature.json
-          fields: "{'version': '${{ needs.prepare.outputs.version }}'}"
+          fields: "{ \"version \": \"${{ needs.prepare.outputs.version }}\"}"
 
       - name: Publish feature
         uses: devcontainers/action@v1
