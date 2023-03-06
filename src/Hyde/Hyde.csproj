@@ -9,7 +9,7 @@
   </PropertyGroup>
   
   <PropertyGroup Label="Package Information">
-    <PackageId>Hyde</PackageId>
+    <PackageId>Hyde.Tool</PackageId>
     <PackAsTool>True</PackAsTool>
     <IsPackable>True</IsPackable>
     <ToolCommandName>dotnet-hyde</ToolCommandName>
