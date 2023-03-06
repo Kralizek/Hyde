@@ -126,6 +126,12 @@ jobs:
         id: get_tag_name  
         run: echo "::set-output name=tag::$(echo "${{ github.ref }}" | grep -oP 'refs/tags/\K(.+)')"
 
+      - name: Update version
+        uses: restack/update-json-file-action@v1.1
+        with:
+          file: ./features/hyde/devcontainer-feature.json
+          fields: "{'version': '${{ needs.prepare.outputs.version }}'}"
+
       - name: Publish feature
         uses: devcontainers/action@v1
         env:
