@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - v*.*.*
+
+jobs:
+
+  release:
+    name: Release
+    strategy:
+      matrix:
+        runtime: [
+          linux-x64, win-x64
+        ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3.3.0
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3.0.3
+        with:
+          dotnet-version: 7.0.201
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v0.9.7
+        with:
+          versionSpec: '5.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Determine version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v0.9.7
+        with:
+          useConfigFile: true
+
+      - name: Publish
+        id: publish
+        run: dotnet publish ./src/Hyde/Hyde.csproj --configuration Release --runtime ${{ matrix.runtime }} --output ./outputs/publish/${{ matrix.runtime }} --property:Version=${{ steps.gitversion.outputs.semVer }}  --property:DebugType=None --property:DebugSymbols=False
+
+      - name: Archive
+        id: zip
+        uses: thedoctor0/zip-release@0.7.1
+        with:
+          type: 'zip'
+          filename: '../../hyde-${{ matrix.runtime }}.zip'
+          directory: ./outputs/publish/${{ matrix.runtime }}
+
+      - name: Add to release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ./outputs/hyde-${{ matrix.runtime }}.zip
