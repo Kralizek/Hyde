@@ -116,7 +116,7 @@ jobs:
 
   feature:
     name: Publish DevContainer feature
-    needs: prepare
+    needs: release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -139,3 +139,4 @@ jobs:
         with:
           base-path-to-features: './features'
           publish-features: true
+          disable-repo-tagging: true
