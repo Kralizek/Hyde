@@ -22,7 +22,11 @@ services.AddSingleton<IConfiguration>(configuration);
 services.AddSingleton(_ => new SerializerBuilder()
     .ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull | DefaultValuesHandling.OmitEmptyCollections | DefaultValuesHandling.OmitDefaults));
 
+services.AddSingleton(_ => new DeserializerBuilder());
+
 services.AddSingleton<ISerializer>(sp => sp.GetRequiredService<SerializerBuilder>().Build());
+
+services.AddSingleton<IDeserializer>(sp => sp.GetRequiredService<DeserializerBuilder>().Build());
 
 services.AddSingleton<IFileNameGenerator, MarkdownFileNameGenerator>();
 
@@ -58,8 +62,11 @@ app.Configure(config =>
             .WithExample(new[] { "post", "list", "--site", "/path/to/your/site" })
             .WithExample(new[] { "post", "list", "--include-drafts" });
 
-        // post.AddCommand<ViewPostCommand>("view")
-        //     .WithDescription("View a post");
+        post.AddCommand<ViewPostCommand>("view")
+            .WithExample(new[] { "post", "view", "--site", "/path/to/your/site" })
+            .WithExample(new[] { "post", "view", "--draft" })
+            .WithExample(new[] { "post", "view", "--show-content" })
+            .WithDescription("View a post");
 
         post.AddCommand<DeletePostCommand>("delete")
             .WithDescription("Deletes a posts")
