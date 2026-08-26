@@ -21,8 +21,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      checks: write
-      pull-requests: write
 
     steps:
       - name: Checkout
@@ -40,10 +38,4 @@ jobs:
         run: dotnet build --configuration Release --no-restore --warnaserror
 
       - name: Test
-        run: dotnet test --configuration Release --no-build --logger "junit;LogFilePath=$(pwd)/outputs/tests/{assembly}/{framework}/TestResults.xml"
-
-      - name: Publish test results
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        if: always()
-        with:
-          files: ./outputs/tests/**/TestResults.xml
+        run: dotnet test --configuration Release --no-build --logger GitHubActions
