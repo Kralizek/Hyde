@@ -2,34 +2,40 @@ name: CI
 
 on:
   push:
-    branches: ["master"]
+    branches: [master]
   pull_request:
-    branches: ["master"]
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
 
 jobs:
   test:
     name: Tests
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3.3.0
-      
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v3.0.3
-        with:
-          dotnet-version: 7.0.x
+    permissions:
+      contents: read
 
-      - name: Restore dependencies
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Restore
         run: dotnet restore
 
-      - name: Verify
-        run: dotnet build --no-restore -p:TreatWarningsAsErrors=True -p:EnforceCodeStyleInBuild=True
+      - name: Build
+        run: dotnet build --configuration Release --no-restore --warnaserror
 
-      - name: Tests
-        run: dotnet test --no-build --no-restore --logger "junit;LogFilePath=$(pwd)/outputs/tests/{assembly}/{framework}/TestResults.xml"
-
-      - name: Publish test results
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        if: always()
-        with:
-          files:
-            ./outputs/tests/**/TestResults.xml
+      - name: Test
+        run: dotnet test --configuration Release --no-build --logger GitHubActions

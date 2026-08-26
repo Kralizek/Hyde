@@ -3,140 +3,188 @@ name: Release
 on:
   push:
     tags:
-      - v*.*.*
+      - 'v*.*.*'
 
 permissions:
-  packages: write
   contents: write
+  packages: write
+  id-token: write
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  CONFIGURATION: Release
 
 jobs:
-
-  prepare:
-    name: Preparation
+  validate:
+    name: Validate release
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3.3.0
-        with:
-          fetch-depth: 0
-      - name: Install GitVersion
-        uses: gittools/actions/gitversion/setup@v0.9.7
-        with:
-          versionSpec: '5.x'
-      - name: Determine version
-        id: gitversion
-        uses: gittools/actions/gitversion/execute@v0.9.7
-        with:
-          useConfigFile: true
     outputs:
-      version: ${{ steps.gitversion.outputs.semVer }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Validate tag and determine version
+        id: version
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Unsupported release tag: $RELEASE_TAG"
+            exit 1
+          fi
+          echo "version=${RELEASE_TAG#v}" >> "$GITHUB_OUTPUT"
 
-  release:
-    name: Publish executable
-    needs: prepare
+  release-executables:
+    name: Publish executable (${{ matrix.runtime }})
+    needs: validate
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        runtime: [
-          linux-x64, win-x64
-        ]
-    runs-on: ubuntu-latest
+        runtime: [linux-x64, win-x64]
+
     steps:
       - name: Checkout
-        uses: actions/checkout@v3.3.0
+        uses: actions/checkout@v7
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v3.0.3
+        uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 7.0.x
+          global-json-file: global.json
 
-      - name: Restore dependencies
+      - name: Restore
         run: dotnet restore
-
-      - name: Build
-        run: dotnet build --no-restore --configuration Release
 
       - name: Publish
-        id: publish
-        run: dotnet publish ./src/Hyde/Hyde.csproj --configuration Release --runtime ${{ matrix.runtime }} --output ./outputs/publish/${{ matrix.runtime }} --property:Version=${{ needs.prepare.outputs.version }} --property:DebugType=None --property:DebugSymbols=False --property:PublishSingleFile=True --property:SelfContained=True --property:AssemblyName=hyde
+        run: >-
+          dotnet publish ./src/Hyde/Hyde.csproj
+          --configuration $CONFIGURATION
+          --runtime ${{ matrix.runtime }}
+          --output ./outputs/publish/${{ matrix.runtime }}
+          --property:Version=${{ needs.validate.outputs.version }}
+          --property:DebugType=None
+          --property:DebugSymbols=False
+          --property:PublishSingleFile=True
+          --property:SelfContained=True
+          --property:AssemblyName=hyde
 
       - name: Archive
-        id: zip
-        uses: thedoctor0/zip-release@0.7.1
-        with:
-          type: 'zip'
-          filename: '../../hyde-${{ matrix.runtime }}.zip'
-          directory: ./outputs/publish/${{ matrix.runtime }}
+        shell: bash
+        run: |
+          cd ./outputs/publish/${{ matrix.runtime }}
+          zip -r ../../hyde-${{ matrix.runtime }}-${{ needs.validate.outputs.version }}.zip .
 
-      - name: Add to release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            ./outputs/hyde-${{ matrix.runtime }}.zip
+      - name: Add executable to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh release upload "${{ github.ref_name }}"
+          "./outputs/hyde-${{ matrix.runtime }}-${{ needs.validate.outputs.version }}.zip"
+          --repo "${{ github.repository }}"
+          --clobber
 
-  pack:
-    name: Publish as .NET tool
-    needs: prepare
+  release-tool:
+    name: Publish .NET tool
+    needs: validate
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
-        uses: actions/checkout@v3.3.0
+        uses: actions/checkout@v7
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v3.0.3
+        uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 7.0.x
+          global-json-file: global.json
 
-      - name: Restore dependencies
+      - name: Restore
         run: dotnet restore
 
       - name: Build
-        run: dotnet build --no-restore --configuration Release
-    
+        run: dotnet build --configuration $CONFIGURATION --no-restore --warnaserror -p:Version=${{ needs.validate.outputs.version }}
+
+      - name: Test
+        run: dotnet test --configuration $CONFIGURATION --no-build --logger GitHubActions
+
       - name: Pack
-        id: pack
-        run: dotnet pack ./src/Hyde/Hyde.csproj --configuration Release --output ./outputs/packages --property:AssemblyName=dotnet-hyde --property:Version=${{ needs.prepare.outputs.version }}
+        run: >-
+          dotnet pack ./src/Hyde/Hyde.csproj
+          --configuration $CONFIGURATION
+          --no-build
+          --output ./outputs/packages
+          --property:AssemblyName=dotnet-hyde
+          --property:Version=${{ needs.validate.outputs.version }}
 
-      - name: Add to release
-        uses: softprops/action-gh-release@v1
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v7
         with:
-          files: |
+          name: nuget-packages
+          path: |
             ./outputs/packages/*.nupkg
+            ./outputs/packages/*.snupkg
+          if-no-files-found: error
 
-      - name: Push to NuGet
-        env:
-          NUGET_AUTH_TOKEN: ${{ secrets.NUGET_TOKEN }}
-        run: |
-          dotnet nuget push ./outputs/packages/*.nupkg --api-key $NUGET_AUTH_TOKEN --source https://api.nuget.org/v3/index.json --skip-duplicate
+      - name: Configure GitHub Packages source
+        run: >-
+          dotnet nuget add source
+          "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+          --name github
+          --username "${{ github.actor }}"
+          --password "${{ github.token }}"
+          --store-password-in-clear-text
 
-      - name: Push to GitHub Package Registry
+      - name: Publish to GitHub Packages
+        run: >-
+          dotnet nuget push
+          "./outputs/packages/*.nupkg"
+          --source github
+          --api-key "${{ github.token }}"
+          --skip-duplicate
+
+      - name: Log in to NuGet.org
+        id: nuget-login
+        uses: nuget/login@v1
+        with:
+          user: Kralizek
+
+      - name: Publish to NuGet.org
+        run: >-
+          dotnet nuget push
+          "./outputs/packages/*.nupkg"
+          --source https://api.nuget.org/v3/index.json
+          --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}"
+          --skip-duplicate
+
+      - name: Add package to GitHub Release
         env:
-          NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: | 
-          dotnet nuget push ./outputs/packages/*.nupkg --api-key $NUGET_AUTH_TOKEN --source https://nuget.pkg.github.com/Kralizek/index.json --skip-duplicate
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh release upload "${{ github.ref_name }}"
+          ./outputs/packages/*.nupkg
+          ./outputs/packages/*.snupkg
+          --repo "${{ github.repository }}"
+          --clobber
 
   feature:
-    name: Publish DevContainer feature
-    needs: release
+    name: Publish Dev Container feature
+    needs: [validate, release-executables]
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
-        uses: actions/checkout@v3.3.0
+        uses: actions/checkout@v7
 
-      - name: Get tag name
-        id: get_tag_name  
-        run: echo "::set-output name=tag::$(echo "${{ github.ref }}" | grep -oP 'refs/tags/\K(.+)')"
-
-      - name: Update version
+      - name: Update feature version
         uses: restackio/update-json-file-action@v2.0
         with:
           file: ./features/hyde/devcontainer-feature.json
-          fields: "{ \"version\": \"${{ needs.prepare.outputs.version }}\"}"
+          fields: '{ "version": "${{ needs.validate.outputs.version }}" }'
 
       - name: Publish feature
         uses: devcontainers/action@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
         with:
-          base-path-to-features: './features'
+          base-path-to-features: ./features
           publish-features: true
           disable-repo-tagging: true
