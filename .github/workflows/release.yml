@@ -104,7 +104,7 @@ jobs:
         run: dotnet build --configuration $CONFIGURATION --no-restore --warnaserror -p:Version=${{ needs.validate.outputs.version }}
 
       - name: Test
-        run: dotnet test --configuration $CONFIGURATION --no-build
+        run: dotnet test --configuration $CONFIGURATION --no-build --logger GitHubActions
 
       - name: Pack
         run: >-
