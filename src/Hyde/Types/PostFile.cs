@@ -1,4 +1,6 @@
-﻿namespace Hyde.Types;
+﻿using YamlDotNet.Serialization;
+
+namespace Hyde.Types;
 
 public class PostFile : TextContentFile
 {
